@@ -204,6 +204,10 @@ end
 # ╔═╡ 452e74e2-6772-11eb-347f-3556436653ca
 df2 = CSV.File("Fungal_trait_data.csv") |> DataFrame
 
+
+# ╔═╡ 868a9138-690b-11eb-3406-17e63715f8c2
+names =df2[3]
+
 # ╔═╡ a1719b38-6774-11eb-01fd-511391d46d16
 begin
 	data = df2["water.niche.width"][1:34]
@@ -219,24 +223,18 @@ moisture_tolerance = (competitive_ranking - moisture_niche_width)
 # ╔═╡ c7ecc5ca-6775-11eb-0da6-09045374100c
 scatter(moisture_tolerance, log.(DR), legend=false)
 
+# ╔═╡ 2a391646-6912-11eb-232f-ab47d53c3f73
+df3 = CSV.File("/data/MCM/dc_data2.csv") |> DataFrame
+
 # ╔═╡ 70cbb1c8-6768-11eb-36c4-b7f1e44ceb9d
 scatter(HR, DR, 
 		xaxis = "Hyphal Extension Rate", 
 		yaxis="Decomposition Rate", 
 		legend = false)
 
-# ╔═╡ 8cea6466-6836-11eb-2704-797ca64396a1
-begin
-	df3 = DataFrame(Species = species,
-				   decomposition_rate = DR,
-				   growth_rate = HR,
-				   moisture_tolerance = moisture_tolerance)
-	CSV.write("/data/MCM/dc_data.csv",df)
-end
-
 # ╔═╡ 7af43442-677a-11eb-2a4f-71ca69516b35
 begin
-	df_final = DataFrame(Species = species,
+	df_final = DataFrame(Species = names,
 				   decomposition_rate = DR,
 				   growth_rate = HR, 
 				   moisture_tolerance = moisture_tolerance)
@@ -262,12 +260,15 @@ struct Hypha
 end
 
 # ╔═╡ 1c533af0-6829-11eb-2f2d-ab894ae524ca
-filter(row -> row["Species"] == "Fomes fomentarius", df3)["decomposition_rate"][1]
+filter(row -> row["Species"] == "f.fom.n", df3)["decomposition_rate"][1]
 
 # ╔═╡ 4d04ef40-68b0-11eb-2781-c9d566b2ece5
 begin a = [Point(1,1)]
 	append!(a,[Point(1,1)])
 end
+
+# ╔═╡ b72da57e-690a-11eb-1c22-d9e655f7ba9e
+
 
 # ╔═╡ 55f94e50-6826-11eb-2a77-713890850b60
 begin
@@ -275,7 +276,6 @@ mutable struct Fungi
 	species::String
 	center::Point
 	death_rate::Float64
-	speed::Float64
 	extension_rate::Float64
 	decomposition_rate::Float64
 	moisture_tolerance::Float64
@@ -283,31 +283,26 @@ mutable struct Fungi
 	to::Vector{Point}
 	angle::Vector{Float64}
 	isTip::Vector{Bool}
-	Si::Vector{Float64}
-
 
 end
 
 	Fungi(species::String,
-		  center::Point,
-		  death_rate::Float64,
-		  speed::Float64) = Fungi(
+		  center::Point) = Fungi(
 					species,
 					Point(1,1),
 				    1.0,
-				    1.0,
-					filter(row -> row["Species"] .== species, df3)["decomposition_rate"][1],
 					filter(row -> row["Species"] .== species, df3)["growth_rate"][1],
+					filter(row -> row["Species"] .== species, df3)["decomposition_rate"][1],
 					filter(row -> row["Species"] .== species, df3)["moisture_tolerance"][1],
 					[center,center,center,center,center,center,center,center],
-					[1e-4*Point(1,0)+center,
-					 1e-4*Point(sqrt(2)/2,sqrt(2)/2)+center,
-					 1e-4*Point(-1,0)+center,
-					 1e-4*Point(-sqrt(2)/2,sqrt(2)/2)+center,
-					 1e-4*Point(0,1)+center,
-					 1e-4*Point(-sqrt(2)/2,-sqrt(2)/2)+center,
-					 1e-4*Point(0,-1)+center,
-					 1e-4*Point(sqrt(2)/2,-sqrt(2)/2)+center,],
+					[Point(1,0)+center,
+					 Point(sqrt(2)/2,sqrt(2)/2)+center,
+					 Point(-1,0)+center,
+					 Point(-sqrt(2)/2,sqrt(2)/2)+center,
+					 Point(0,1)+center,
+					 Point(-sqrt(2)/2,-sqrt(2)/2)+center,
+					 Point(0,-1)+center,
+					 Point(sqrt(2)/2,-sqrt(2)/2)+center,],
 					[0,
 					 pi/4,
 					 pi/2,
@@ -323,26 +318,16 @@ end
 					  true,
 					  true,
 					  true,
-					  true],
-					 [ 10^(-5)
-					   10^(-5)
-			    	   10^(-5)
-					   10^(-5)
-					   10^(-5)
-					   10^(-5)
-					   10^(-5)
-					   10^(-5)]
-					 )
+					  true])
 end
 
 # ╔═╡ 2674f916-68d2-11eb-0066-1fcc4722e530
+#Env = Dict( "Arid" => (0.9727571, 0.075*0.0363239), "Semi-Arid" => (0.9789321, 0.125*0.0363239), "Jungle" => (0.9836542, 0.167*0.0363239),
+#	"Temperate" => (0.9916455, 0.05*0.0363239), "Arboreal" => (0.9934617,0.075*0.0363239))
 
-
-# ╔═╡ d1293282-682f-11eb-1e05-71185e0dcc8b
- genk = Fungi("Fomes fomentarius",
-		Point(50,50),
-		1.0,
-		1.0)
+Env = Dict( "Tropical" => (1.383, 0.302), "Tropical Seasonal" => (1.661, 0.588), "Temperate" => (1.636, 0.665),
+	"Boreal" => (-0.5, 0.2), "Mediterranean" => (-2.335,0.659), "Semi-Arid" => (-2.460, 0.881))
+						
 
 # ╔═╡ df20ac7a-6830-11eb-077f-5d0b553551c2
 function getx(p::Point)
@@ -364,49 +349,28 @@ md"
 #   JUSTIFYYYYYYYYYYY 
 "
 
-# ╔═╡ b9127852-68f5-11eb-0b11-172f8bb57677
-t = 0.01 # days
-
-# ╔═╡ 7cc884ac-68fc-11eb-0500-b3e0622146dc
-Se = zeros(10000,10000)
-
-# ╔═╡ 469a53c2-68fe-11eb-1064-8d806c382970
-
-
 # ╔═╡ 7651344a-68f5-11eb-17be-d7573461d1a8
 function growth_rate()
 	return 0.5
 end
 
 # ╔═╡ ac8dd314-6847-11eb-3f2e-1163d16252d6
-function next_point(p::Point, ϕ::Float64, isTip::Bool, Si::Float64)
+function next_point(p::Point, ϕ::Float64, isTip::Bool, speed::Float64)
 	
 	if(!isTip)
 		return -1
 	end
 	
-	if(Si < 10^(-12)) 
-		return 1
-	end
-	
-
-	if(bernoulli(1/8))
+	if(bernoulli(0.20))
 		if(bernoulli(0.50))
 			ϕ += π/6
 		else
 			ϕ -= π/6	
 		end
 	end
-	v = growth_rate() 
-	return (p, Point(p.x + v*t*cos(ϕ), p.y +  v*t*sin(ϕ)),ϕ)
+	
+	return (p,Point(p.x + speed*cos(ϕ), p.y +  speed*sin(ϕ)),ϕ)
 		
-end
-
-# ╔═╡ e9e11d3c-6853-11eb-0b2f-c310a84e7f9e
-function next_branch(p::Point)
-	d=Normal(1.4,0.17)
-	ϕ = rand(d)
-	return Point(p.x + cos(ϕ), p.y +  sin(ϕ))
 end
 
 # ╔═╡ f3df1314-68b4-11eb-2d92-6b515469e676
@@ -428,13 +392,6 @@ end
 function getThird(t::Tuple{Point,Point,Float64})
 	return t[3]
 end
-
-# ╔═╡ c097e286-68b9-11eb-2799-333f9b0cd757
-genk
-
-# ╔═╡ d6eac3f2-68be-11eb-026d-6729ab9283b1
-s = next_point.(genk.to,genk.angle,genk.isTip,genk.Si)
-
 
 # ╔═╡ 1c596458-68c8-11eb-3993-29610d466d9a
 function orientation(p, q, r)
@@ -528,129 +485,72 @@ function inter_point(p1,p2,x1,x2)
 	end
 end
 
-# ╔═╡ d45665f6-68d7-11eb-2156-1f4a6b81bba1
-
-
-# ╔═╡ aaa7cfd4-68cc-11eb-2f52-c9bf76acd4df
-begin
-aass = next_point.(genk.to,genk.angle,genk.isTip,genk.Si)
-new_point= Point(1,2)
-	
-aass[1][2].x = new_point.x
-end
-
-# ╔═╡ 1b972c50-68d0-11eb-07b0-21c499061810
-inter_point(Point(1,0),Point(1,5),Point(0,3),Point(5,3))
-
 # ╔═╡ d94caad6-68df-11eb-28f6-c1df93195446
 function branch_angle()
 	return rand(Normal(1.39626, 0.174533))
 end
 
-# ╔═╡ d2bd7028-68f4-11eb-3fa0-a77fe1160848
-function getI(c::CartesianIndex{2})
-	return c[2]
+
+# ╔═╡ 9d104afe-6908-11eb-080c-433d688ade56
+function get_speed(fungi::Fungi, environment)
+	#our_hum = environment.humidity()
+	our_hum = rand(Normal(Env[environment][1], Env[environment][2]))
+	curves = CSV.File("/data/MCM/curves.csv") |> DataFrame
+	speeds = filter(row -> (row["species"] .== fungi.species) , curves)["hyphal_rate"]
+	hums = filter(row -> (row["species"] .== fungi.species) , curves)["humidity"]
+	speeds[argmin(abs.(hums .- our_hum))]
 end
 
-# ╔═╡ 6e220a2a-68f4-11eb-2a32-17b9d6b1fef2
+# ╔═╡ d6b751a6-691e-11eb-1f6f-176976a3cec6
+Bool.(ones(24))
+
+# ╔═╡ df386ffc-691b-11eb-2c58-adf1224e7a40
 begin
-ar = [-1 -1 1 1 -1]
-getI.(findall(x -> x == 1,ar))
-end
-
-# ╔═╡ d41d5e40-68f6-11eb-0274-1ddf21a46161
-function branch(p::Point, Si::Float64)
-	if Si < 10^(-11)
-		return false
-	else
-		if(bernoulli(Si*t*10^3))
-			return true
-		end
-	end
-	return false
-end
-
-# ╔═╡ eddde038-68f7-11eb-3368-6760f8a0763b
-function shares_endpoint(p1,p2,x1,x2)
-	if ((isequal(p1,x1) && isequal(p2,x2)) || (isequal(p1,x2) && isequal(p2,x1)))
-			return false
-	end
-	return (isequal(p1,x1)
-		|| isequal(p1,x2) 
-		|| isequal(p2,x1) 
-		|| isequal(p2,x2)) 
-	
+ab=[Point(1,1),Point(1,2),Point(3,3)]
+deleteat!(ab,[false,true,false])
 end
 
 # ╔═╡ df7fd6dc-683d-11eb-2a9a-9feba787dd47
-function step!(fungi::Fungi)
+function step!(fungi::Fungi,environment::String,f2::Fungi)
+	
 	# TIP EXTENSION
-	s = next_point.(fungi.to,fungi.angle,fungi.isTip,fungi.Si)
+	s = next_point.(fungi.to,fungi.angle,fungi.isTip, get_speed(fungi,environment))
 	fungi.isTip = fungi.isTip .* 0
 	s = filter(x -> x != -1, s)
-	indices = []
-	
-	try
-	append!(indices, getI.(findall(x -> x==1,s)))
-	catch
-		@warn "blabla"
-	end
-	s = filter(x -> x != 1, s)
-	fungi.isTip[indices] .= 1
-	
 	
 	# BRANCHING
-#	for i in 1:length(fungi.from)
-#		if(branch(fungi.from[i], fungi.Si[i]))
-#			ϕ = branch_angle()
-#			p = fungi.from[i]
-#			
-#			if length(s) == 0
-#				s= [(p, Point(p.x + cos(ϕ), p.y +  sin(ϕ)), ϕ)]
-#			else	
-#				push!(s, (p, Point(p.x + cos(ϕ), p.y +  sin(ϕ)), ϕ))
-#			end
-#			
-#		end
-#	end
-	
-	# TRANSLOCATION
-	dif = zeros(size(fungi.from))
 	for i in 1:length(fungi.from)
-		for j in 1:(length(fungi.from))
-			if(shares_endpoint(fungi.from[i],fungi.to[i],fungi.from[j],fungi.to[j]))
-				dif[i] +=  (fungi.Si[j] - fungi.Si[i])/(1e-4)
-			end
+		p = fungi.from[i]
+		if (bernoulli(0.01))
+			ϕ = branch_angle()
+			θ = fungi.angle[i]
+			push!(s, (p, Point(p.x + cos(θ+ϕ), p.y +  sin(θ+ϕ)), ϕ))
 		end
 	end
-	dif.*=t
-	fungi.Si += dif
-	## change the substrate!
 	
-	# UPTAKE
+	# DYING
+	to_delete= []
 	for i in 1:length(fungi.from)
-		xcoord = Int( floor(getx(fungi.to[i])/1e-4))
-		ycoord = Int(floor(gety(fungi.to[i])/1e-4))
-		ΔSi = 600*t*(fungi.Si[i]/(4*1e-9+fungi.Si[i]))
-			 # Se[xcoord, ycoord ]
-		#if ΔSi > Se[xcoord, ycoord]
-			#fungi.Si[i] += Se[xcoord, ycoord]
-			#Se[xcoord, ycoord] = 0
-		#else
-		#	fungi.Si[i] += ΔSi
-			#Se[xcoord, ycoord] -= ΔSi
-		#end
+		p = fungi.from[i]
+		if (bernoulli(fungi.moisture_tolerance *0.001))
+			append!(to_delete,[true])
+		else
+			append!(to_delete,[false])
+		end
 	end
-	
-	
-	
+	deleteat!(fungi.from,Bool.(to_delete))
+	deleteat!(fungi.to,Bool.(to_delete))
+	deleteat!(fungi.angle,Bool.(to_delete))
+	deleteat!(fungi.isTip,Bool.(to_delete))
+
+
 	## INTERSECTION
 	new_tips = ones(length(s))
 	
 	for i in 1:length(s)
+		p1 = s[i][1]
+		p2 = s[i][2]
 		for j in 1:(length(fungi.to))
-			p1 = s[i][1]
-			p2 = s[i][2]
 			x1 = fungi.from[j]
 			x2 = fungi.to[j]
 			if(intersects(p1,p2,x1,x2))
@@ -661,15 +561,27 @@ function step!(fungi::Fungi)
 				break
 			end
 		end
+		
+		for j in 1:(length(f2.from))
+			x1 = f2.from[j]
+			x2 = f2.to[j]
+			if(intersects(p1,p2,x1,x2))
+				new_p = inter_point(p1,p2,x1,x2)
+				s[i][2].x = new_p.x
+				s[i][2].y = new_p.y
+				new_tips[i]=0
+				break
+			end
+		end
+		
 	end
 
 	append!(fungi.from, getFirst.(s))
 	append!(fungi.to, getSecond.(s))
 	append!(fungi.angle, getThird.(s))
 	append!(fungi.isTip,new_tips )
-	append!(fungi.Si, zeros(Float64,size(s)))
 	
-	return fungi
+	return (copy(fungi.from),copy(fungi.to))
 end
 
 # ╔═╡ 96846800-6845-11eb-0a66-a7fb85b055bf
@@ -677,55 +589,70 @@ function getpoints(hypha::Hypha)
 	hypha.points
 end
 
-# ╔═╡ 8d5f2f56-68c4-11eb-2a5c-2572d0e33ff4
-genk
+# ╔═╡ 77f4c4ba-6843-11eb-3920-636754a1d827
+begin
+	genk = Fungi("a.gal10.n",Point(49,49))
+	genk2 = Fungi("f.fom.n",Point(51,51))
+	steps1 = []
+	steps2 = []
+	for i in 1:50
+		push!(steps1,step!(genk,"Temperate",genk2))
+		push!(steps2,step!(genk2,"Tropical",genk))
+	end
+end
 
-# ╔═╡ 400c487e-68d8-11eb-10f8-f719cf876699
-intersects(Point(48.0,51.0),Point(47.13,51.5),Point(49.0,51.0),Point(48.0,51.00))
 
-# ╔═╡ 791b8654-68ea-11eb-3483-0bf062d2508b
-scatter([1],[1])
+# ╔═╡ 648901be-6929-11eb-1416-dbb11d5cb415
+@bind timestep Slider(1:length(steps1), default=1)
 
-
-# ╔═╡ 01022fa4-68bf-11eb-10c4-c5c8049ff714
-simulation
-
-# ╔═╡ eaefdc8c-68a7-11eb-1cd5-575c2445e9ce
-time
+# ╔═╡ 9377ac02-692c-11eb-163f-df3fd7852195
+timestep
 
 # ╔═╡ 730868de-6845-11eb-02b7-3b3a8f9f692a
-function plot_fungi(fungi::Fungi)
-	rng = range(HSV(0,1,1), stop=HSV(-360,1,1), length=200)
-	sc = plot(50,50, legend=false)
-	for i in 1:length(fungi.from)
-		plot!([getx(fungi.from[i]), getx(fungi.to[i])], [gety(fungi.from[i]), gety(fungi.to[i])])
+function plot_fungi(from, to, color)
+	
+	sc = plot!(50,50, legend=false, color=color)
+	for i in 1:length(from)
+		plot!([getx(from[i]), getx(to[i])], 
+			  [gety(from[i]), gety(to[i])],
+			  linecolor=color)
 	end
 	return sc
 end
 
-# ╔═╡ 77f4c4ba-6843-11eb-3920-636754a1d827
+# ╔═╡ 7c14b5c2-6928-11eb-0485-034664ad8a33
 begin
-	step!(genk)
-	##@bind time Slider(1:length(getpoints(genk.hyphae[1])),default=1)
-	plot_fungi(genk)
+	plot(50,50)
+	plot_fungi(steps1[timestep][1], steps1[timestep][2], :blue)
+	plot_fungi(steps2[timestep][1], steps2[timestep][2], :red)
 end
-
-
-# ╔═╡ d9d7474c-68d3-11eb-292a-c5a466ab3e4b
-begin
-	plot_fungi(genk)
-end
-
-# ╔═╡ dea5193e-68c4-11eb-2a88-2b2c0ffca2e2
-plot_fungi(simulation[i])
 
 # ╔═╡ f3388864-68aa-11eb-3682-75dc9b9f5f4f
 @gif for t in 1:length(getpoints(genk.hyphae[1]))
 	plot_fungi(genk,t)
 end
 
-# ╔═╡ f0fd1926-68b3-11eb-3c50-1defc8f0b383
-plot_fungi(genk)
+# ╔═╡ c4415818-6929-11eb-0597-25500211a196
+function fungi_len(from,to)
+	len = 0
+	for i in 1:length(from)
+		len += sqrt(
+			    (getx(from[i]) - getx(to[i]))^2 +
+			    (gety(from[i]) - gety(to[i]))^2
+				)
+	end
+	return len
+end
+
+# ╔═╡ bb5e5218-692a-11eb-1449-a7fca9e694bc
+(fungi_len(steps1[timestep][1], steps1[timestep][2]),
+ fungi_len(steps2[timestep][1], steps2[timestep][2]))
+
+# ╔═╡ 51bf812a-6933-11eb-0fdb-2fca88866667
+md" 
+	# Increase branch rate and
+	limit the environment where they grow
+"
 
 # ╔═╡ 58cd588a-6851-11eb-1451-5bf9eb967c5f
 md"
@@ -748,43 +675,38 @@ Branching angles have been shownto be normally distributed in fungal mycelia (Hu
 # ╟─54503b68-6768-11eb-369c-9d1714c8a21c
 # ╟─70cbb1c8-6768-11eb-36c4-b7f1e44ceb9d
 # ╠═67f36fa8-676d-11eb-3055-bd1f93a5c936
-# ╟─452e74e2-6772-11eb-347f-3556436653ca
+# ╠═452e74e2-6772-11eb-347f-3556436653ca
+# ╠═868a9138-690b-11eb-3406-17e63715f8c2
 # ╟─7a738940-6776-11eb-39e7-c33e9301faf3
 # ╟─a1719b38-6774-11eb-01fd-511391d46d16
 # ╟─aadd29bc-6774-11eb-02c6-59f021e86c6a
 # ╟─35dfd5e6-6775-11eb-23d6-052efdcd1dd1
-# ╟─8cea6466-6836-11eb-2704-797ca64396a1
 # ╟─c7ecc5ca-6775-11eb-0da6-09045374100c
-# ╟─7af43442-677a-11eb-2a4f-71ca69516b35
+# ╠═7af43442-677a-11eb-2a4f-71ca69516b35
 # ╟─e4efbe66-677a-11eb-105b-819ebbd28990
+# ╠═2a391646-6912-11eb-232f-ab47d53c3f73
 # ╠═4c2ed13a-6851-11eb-3fcb-c79d02727c89
 # ╠═78c91270-6827-11eb-250a-6f5be3f36820
-# ╠═ec175d6c-6828-11eb-2f6f-c75c5b18c3ef
-# ╠═6892328c-68ff-11eb-2a85-4f5aa9d53b32
-# ╠═ed19a464-68ea-11eb-1d13-cd2480f4186c
+# ╟─ec175d6c-6828-11eb-2f6f-c75c5b18c3ef
+# ╟─6892328c-68ff-11eb-2a85-4f5aa9d53b32
+# ╟─ed19a464-68ea-11eb-1d13-cd2480f4186c
 # ╠═1ea0c1a8-683d-11eb-0efa-89c527035050
 # ╠═1c533af0-6829-11eb-2f2d-ab894ae524ca
 # ╠═4d04ef40-68b0-11eb-2781-c9d566b2ece5
+# ╠═b72da57e-690a-11eb-1c22-d9e655f7ba9e
 # ╠═55f94e50-6826-11eb-2a77-713890850b60
 # ╠═2674f916-68d2-11eb-0066-1fcc4722e530
-# ╠═d1293282-682f-11eb-1e05-71185e0dcc8b
 # ╟─df20ac7a-6830-11eb-077f-5d0b553551c2
 # ╟─f6aea732-6830-11eb-1fbe-bfd1f16815a3
 # ╠═01e89ad2-684e-11eb-1a44-fde170bc69d3
 # ╠═8babf7d4-684e-11eb-1cc5-8d13e27b32b3
-# ╠═b9127852-68f5-11eb-0b11-172f8bb57677
-# ╠═7cc884ac-68fc-11eb-0500-b3e0622146dc
-# ╠═469a53c2-68fe-11eb-1064-8d806c382970
 # ╟─7651344a-68f5-11eb-17be-d7573461d1a8
 # ╠═ac8dd314-6847-11eb-3f2e-1163d16252d6
 # ╠═398fdf3a-6854-11eb-3041-b9130d132483
-# ╠═e9e11d3c-6853-11eb-0b2f-c310a84e7f9e
 # ╠═f3df1314-68b4-11eb-2d92-6b515469e676
 # ╟─d5796fb4-68b9-11eb-021a-e537d93880d7
 # ╟─f6034e94-68b9-11eb-3586-d18d276bd9be
 # ╟─331a2554-68bb-11eb-0fb9-99fc2c426c1a
-# ╠═c097e286-68b9-11eb-2799-333f9b0cd757
-# ╠═d6eac3f2-68be-11eb-026d-6729ab9283b1
 # ╠═1c596458-68c8-11eb-3993-29610d466d9a
 # ╠═00acdf7c-68d3-11eb-273a-61da7ca2de6f
 # ╠═6d712a94-68c6-11eb-2881-1b394bde84a4
@@ -793,26 +715,20 @@ Branching angles have been shownto be normally distributed in fungal mycelia (Hu
 # ╠═99167488-68c6-11eb-13db-f9cedf855276
 # ╠═b4113c3a-68c8-11eb-0982-33a1ce621b57
 # ╠═754a0390-68ca-11eb-2c08-056dbccd852e
-# ╠═d45665f6-68d7-11eb-2156-1f4a6b81bba1
-# ╠═aaa7cfd4-68cc-11eb-2f52-c9bf76acd4df
-# ╠═1b972c50-68d0-11eb-07b0-21c499061810
 # ╠═d94caad6-68df-11eb-28f6-c1df93195446
-# ╠═d2bd7028-68f4-11eb-3fa0-a77fe1160848
-# ╠═6e220a2a-68f4-11eb-2a32-17b9d6b1fef2
-# ╠═d41d5e40-68f6-11eb-0274-1ddf21a46161
-# ╠═eddde038-68f7-11eb-3368-6760f8a0763b
+# ╠═9d104afe-6908-11eb-080c-433d688ade56
+# ╠═d6b751a6-691e-11eb-1f6f-176976a3cec6
+# ╠═df386ffc-691b-11eb-2c58-adf1224e7a40
 # ╠═df7fd6dc-683d-11eb-2a9a-9feba787dd47
 # ╟─96846800-6845-11eb-0a66-a7fb85b055bf
 # ╟─3a5fc9dc-68ab-11eb-3a40-9fc97f9b2ebe
-# ╠═8d5f2f56-68c4-11eb-2a5c-2572d0e33ff4
-# ╠═400c487e-68d8-11eb-10f8-f719cf876699
 # ╠═77f4c4ba-6843-11eb-3920-636754a1d827
-# ╠═d9d7474c-68d3-11eb-292a-c5a466ab3e4b
-# ╠═791b8654-68ea-11eb-3483-0bf062d2508b
-# ╠═01022fa4-68bf-11eb-10c4-c5c8049ff714
-# ╠═eaefdc8c-68a7-11eb-1cd5-575c2445e9ce
-# ╠═dea5193e-68c4-11eb-2a88-2b2c0ffca2e2
+# ╠═648901be-6929-11eb-1416-dbb11d5cb415
+# ╠═9377ac02-692c-11eb-163f-df3fd7852195
+# ╠═7c14b5c2-6928-11eb-0485-034664ad8a33
+# ╠═bb5e5218-692a-11eb-1449-a7fca9e694bc
 # ╠═f3388864-68aa-11eb-3682-75dc9b9f5f4f
-# ╟─730868de-6845-11eb-02b7-3b3a8f9f692a
-# ╠═f0fd1926-68b3-11eb-3c50-1defc8f0b383
+# ╠═730868de-6845-11eb-02b7-3b3a8f9f692a
+# ╟─c4415818-6929-11eb-0597-25500211a196
+# ╠═51bf812a-6933-11eb-0fdb-2fca88866667
 # ╠═58cd588a-6851-11eb-1451-5bf9eb967c5f
